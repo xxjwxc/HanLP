@@ -14,7 +14,6 @@ import shutil
 import sys
 import tarfile
 import tempfile
-import time
 import urllib
 import zipfile
 from contextlib import contextmanager
@@ -26,11 +25,12 @@ from urllib.request import urlretrieve
 
 import numpy as np
 import torch
+from hanlp_downloader import Downloader
+from hanlp_downloader.log import DownloadCallback
 from pkg_resources import parse_version
 
 import hanlp
 from hanlp_common.constant import HANLP_URL, HANLP_VERBOSE
-from hanlp.utils import time_util
 from hanlp.utils.log_util import logger, flash, cprint, remove_color_tag
 from hanlp.utils.string_util import split_long_sentence_into
 from hanlp.utils.time_util import now_filename, CountdownTimer
@@ -173,37 +173,11 @@ def download(url, save_path=None, save_dir=hanlp_home(), prefix=HANLP_URL, appen
         tmp_path = '{}.downloading'.format(save_path)
         remove_file(tmp_path)
         try:
-            def reporthook(count, block_size, total_size):
-                global start_time, progress_size
-                if count == 0:
-                    start_time = time.time()
-                    progress_size = 0
-                    return
-                duration = time.time() - start_time
-                duration = max(1e-8, duration)
-                progress_size = int(count * block_size)
-                if progress_size > total_size:
-                    progress_size = total_size
-                speed = int(progress_size / duration)
-                ratio = progress_size / total_size
-                ratio = max(1e-8, ratio)
-                percent = ratio * 100
-                eta = duration / ratio * (1 - ratio)
-                speed = human_bytes(speed)
-                progress_size = human_bytes(progress_size)
-                if verbose:
-                    sys.stderr.write("\r%.2f%%, %s/%s, %s/s, ETA %s      " %
-                                     (percent, progress_size, human_bytes(total_size), speed,
-                                      time_util.report_time_delta(eta)))
-                    sys.stderr.flush()
-
-            import socket
-            socket.setdefaulttimeout(10)
-            opener = urllib.request.build_opener()
-            opener.addheaders = [('User-agent', f'HanLP/{__version__}')]
-            urllib.request.install_opener(opener)
-            urlretrieve(url, tmp_path, reporthook)
-            eprint()
+            downloader = Downloader(url, tmp_path, 4, headers={
+                'User-agent': f'HanLP/{__version__} ({platform.platform()})'})
+            if verbose:
+                downloader.subscribe(DownloadCallback(show_header=False))
+            downloader.start_sync()
         except BaseException as e:
             remove_file(tmp_path)
             url = url.split('#')[0]
@@ -236,7 +210,7 @@ def parse_url_path(url):
 
 
 def uncompress(path, dest=None, remove=True, verbose=HANLP_VERBOSE):
-    """uncompress a file
+    """Uncompress a file and clean up uncompressed files once an error is triggered.
 
     Args:
       path: The path to a compressed file
@@ -254,11 +228,16 @@ def uncompress(path, dest=None, remove=True, verbose=HANLP_VERBOSE):
     file_is_zip = ext == '.zip'
     root_of_folder = None
     if ext == '.gz':
-        with gzip.open(path, 'rb') as f_in, open(prefix, 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
+        try:
+            with gzip.open(path, 'rb') as f_in, open(prefix, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        except Exception as e:
+            remove_file(prefix)
+            remove_file(path)
+            raise e
     else:
-        with zipfile.ZipFile(path, "r") if ext == '.zip' else tarfile.open(path, 'r:*') as archive:
-            try:
+        try:
+            with zipfile.ZipFile(path, "r") if ext == '.zip' else tarfile.open(path, 'r:*') as archive:
                 if not dest:
                     namelist = sorted(archive.namelist() if file_is_zip else archive.getnames())
                     if namelist[0] == '.':
@@ -275,7 +254,7 @@ def uncompress(path, dest=None, remove=True, verbose=HANLP_VERBOSE):
                         dest = os.path.dirname(path)  # only one folder, unzip to the same dir
                     else:
                         root_of_folder = None
-                        dest = prefix  # assume zip contains more than one files or folders
+                        dest = prefix  # assume zip contains more than one file or folder
                 if verbose:
                     eprint('Extracting {} to {}'.format(path, dest))
                 archive.extractall(dest)
@@ -286,14 +265,14 @@ def uncompress(path, dest=None, remove=True, verbose=HANLP_VERBOSE):
                     dest = path_join(dest, folder_name)
                 elif len(namelist) == 1:
                     dest = path_join(dest, namelist[0])
-            except (RuntimeError, KeyboardInterrupt) as e:
-                remove = False
-                if os.path.exists(dest):
-                    if os.path.isfile(dest):
-                        os.remove(dest)
-                    else:
-                        shutil.rmtree(dest)
-                raise e
+        except Exception as e:
+            remove_file(path)
+            if os.path.exists(prefix):
+                if os.path.isfile(prefix):
+                    os.remove(prefix)
+                elif os.path.isdir(prefix):
+                    shutil.rmtree(prefix)
+            raise e
     if remove:
         remove_file(path)
     return dest

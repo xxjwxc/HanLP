@@ -276,8 +276,10 @@ class TorchComponent(Component, ABC):
         criterion = self.build_criterion(**merge_dict(config, trn=trn))
         optimizer = self.build_optimizer(**merge_dict(config, trn=trn, criterion=criterion))
         metric = self.build_metric(**self.config)
-        if hasattr(trn.dataset, '__len__') and dev and hasattr(dev.dataset, '__len__'):
-            logger.info(f'{len(trn.dataset)}/{len(dev.dataset)} samples in trn/dev set.')
+        if hasattr(trn, 'dataset') and dev and hasattr(dev, 'dataset'):
+            if trn.dataset and dev.dataset:
+                logger.info(f'{len(trn.dataset)}/{len(dev.dataset)} samples in trn/dev set.')
+        if hasattr(trn, '__len__') and dev and hasattr(dev, '__len__'):
             trn_size = len(trn) // self.config.get('gradient_accumulation', 1)
             ratio_width = len(f'{trn_size}/{trn_size}')
         else:
@@ -321,11 +323,12 @@ class TorchComponent(Component, ABC):
         """
         pass
 
-    def build_vocabs(self, **kwargs):
+    def build_vocabs(self, trn: torch.utils.data.Dataset, logger: logging.Logger):
         """Override this method to build vocabs.
 
         Args:
-            **kwargs: The subclass decides the method signature.
+            trn: Training set.
+            logger: Logger for reporting progress.
         """
         pass
 
@@ -359,11 +362,10 @@ class TorchComponent(Component, ABC):
         pass
 
     @abstractmethod
-    def build_criterion(self, decoder, **kwargs):
+    def build_criterion(self, **kwargs):
         """Implement this method to build criterion (loss function).
 
         Args:
-            decoder: The model or decoder.
             **kwargs: The subclass decides the method signature.
         """
         pass
@@ -550,7 +552,7 @@ class TorchComponent(Component, ABC):
                 flash('')
         else:
             if logger:
-                logger.info('Using CPU')
+                logger.info('Using [red]CPU[/red]')
 
     def parallelize(self, devices: List[Union[int, torch.device]]):
         return nn.DataParallel(self.model, device_ids=devices)

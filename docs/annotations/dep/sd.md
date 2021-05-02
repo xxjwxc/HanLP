@@ -21,9 +21,13 @@
 
 # Stanford Dependencies
 
-See also [Stanford typed dependencies manual](https://nlp.stanford.edu/software/dependencies_manual.pdf).
-
 ## Chinese
+
+```{eval-rst}
+
+See also :cite:`chang-etal-2009-discriminative`.
+    
+```
 
 |Tag|Description|中文简称|例句|依存弧|
 | ---- | ---- | ---- | ---- | ---- |
@@ -42,10 +46,10 @@ See also [Stanford typed dependencies manual](https://nlp.stanford.edu/software/
 |assm|associative marker|关联标记|企业的商品|assm(企业，的）|
 |assmod|associative modifier|关联修饰|企业的商品|assmod(商品，企业）|
 |cc|coordinating conjunction|并列关系|设备和原材料|cc(原材料，和）|
-|elf|classifier modifier|类别修饰|七十一件文件|elf(文件，件）|
+|clf|classifier modifier|类别修饰|七十一件文件|clf(文件，件）|
 |ccomp|clausal complement|从句补充|银行决定先取得信用评级|ccomp(决定，取得）|
 |det|determiner|限定语|这些经济活动|det(活动，这些）|
-|lobj|localizer object|时间介词|近年来|lobj(来，近年）|
+|lobj|localizer object|范围宾语|近年来|lobj(来，近年）|
 |range|dative object that is a quantifier phrase|数量词间接宾语|成交药品一亿多元|range(成交，元）|
 |asp|aspect marker|时态标记|发挥了作用|asp(发挥，了）|
 |tmod|temporal modifier|时间修饰语|以前不曾遇到过|tmod(遇到，以前）|
@@ -71,8 +75,11 @@ See also [Stanford typed dependencies manual](https://nlp.stanford.edu/software/
 |cop|copular|系动词|原是自给自足的经济|cop(自给自足，是）|
 |pass|passive marker|被动标记|被认定为高技术产业|pass(认定，被）|
 |nsubjpass|nominal passive subject|被动名词主语|镍被称作现代工业的维生素|nsubjpass(称作，镍）|
+|dep|dependent|其他依赖关系|新华社北京二月十二日电|dep(电，新华社）|
 
 ## English
+
+See also [Stanford typed dependencies manual](https://nlp.stanford.edu/software/dependencies_manual.pdf).
 
 | Tag        | Description                       |
 |------------|-----------------------------------|

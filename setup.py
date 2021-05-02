@@ -38,12 +38,13 @@ setup(
         'termcolor',
         'pynvml',
         'alnlp',
-        'penman==0.6.2',
         'toposort==1.5',
         'transformers>=4.1.1',
+        'sentencepiece>=0.1.91'
         'torch>=1.6.0',
         'hanlp-common>=0.0.6',
         'hanlp-trie>=0.0.2',
+        'hanlp-downloader',
     ],
     extras_require={
         'full': [
@@ -52,7 +53,7 @@ setup(
             'bert-for-tf2==0.14.6',
             'py-params==0.9.7',
             'params-flow==0.8.2',
-            'sentencepiece==0.1.91'
+            'penman==0.6.2',
         ],
     },
     python_requires='>=3.6',
